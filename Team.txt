@@ -1,0 +1,10 @@
+Team Members:
+Adam Dewing
+Heruy Wondafrash
+Natnael Alemayehu
+
+Contributions:
+	Load File:  	Natnael Alemayehu
+	Send Data:		Heruy Wondafrash
+	Receive File:	Adam Dewing
+	Save File:		Natnael Alemayehu

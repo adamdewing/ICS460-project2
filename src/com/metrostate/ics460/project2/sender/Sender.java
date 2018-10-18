@@ -1,6 +1,7 @@
 package com.metrostate.ics460.project2.sender;
 
 import java.io.IOException;
+import java.util.Scanner;
 
 public class Sender {
 
@@ -13,8 +14,22 @@ public class Sender {
     }
     
     public void start() {
+    	Scanner scanner = new Scanner(System.in);
+		System.out.print("Please provise ip address: ");
+		String ipAddress = scanner.next();
+		System.out.print("Please provise port number: ");
+		int port = scanner.nextInt();
+		System.out.print("Enter packet size: ");
+		int packetSize = scanner.nextInt();
+		System.out.print("Enter window size: ");
+		int windowSize = scanner.nextInt();
+		System.out.print("Enter timeout interval: ");
+		long timeout = scanner.nextLong();
+		System.out.print("");
     	byte[] bytes = loader.loadData();
-    	dataSender.sendData(bytes, 0, 0, null, null, 0, 0);
+    	
+    	dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize, 0);
+    	scanner.close();
     }
 
 }

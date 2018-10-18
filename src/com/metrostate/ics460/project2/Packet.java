@@ -1,19 +1,24 @@
 package com.metrostate.ics460.project2;
 
 public class Packet {
-	
+
 	private short cksum;
 	private short len;
 	private int ackno;
 	private int seq_num;
-	private byte data[];
-	
+	private byte[] data = new byte[500];
+
 	public Packet(short cksum, short len, int ackno, int seq_num, byte[] data) {
 		this.cksum = cksum;
 		this.len = len;
 		this.ackno = ackno;
 		this.seq_num = seq_num;
 		this.data = data;
+	}
+
+	public Packet(short len, int ackno) {
+		this.len = len;
+		this.ackno = ackno;
 	}
 
 	public short getCksum() {
@@ -49,8 +54,8 @@ public class Packet {
 	}
 
 	public byte[] getData() {
-		byte bytes = (Byte) null;
-		for(int i = 0; i < data.length; i++) {
+		byte bytes = 0;
+		for (int i = 0; i < data.length; i++) {
 			bytes += data[i];
 		}
 		return data;
@@ -59,7 +64,5 @@ public class Packet {
 	public void setData(byte[] data) {
 		this.data = data;
 	}
-	
-	
-	
+
 }
