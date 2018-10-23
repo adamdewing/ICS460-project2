@@ -15,9 +15,9 @@ public class Sender {
     
     public void start() {
     	Scanner scanner = new Scanner(System.in);
-		System.out.print("Please provise ip address: ");
+		System.out.print("Please provide ip address: ");
 		String ipAddress = scanner.next();
-		System.out.print("Please provise port number: ");
+		System.out.print("Please provide port number: ");
 		int port = scanner.nextInt();
 		System.out.print("Enter packet size: ");
 		int packetSize = scanner.nextInt();
@@ -28,7 +28,8 @@ public class Sender {
 		System.out.print("");
     	byte[] bytes = loader.loadData();
     	
-    	dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize, 0);
+			dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize);
+
     	scanner.close();
     }
 
