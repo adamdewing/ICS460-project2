@@ -5,7 +5,13 @@ import java.io.Serializable;
 public class Packet implements Serializable {
 
 	/**
-	 * 
+	 * /TODO about creating the packet class for sending the packet:
+	 * cksum will always be 0
+	 * len  will be the data.length + 12
+	 * ackno will always be the sequence number you are waiting on an acknowledgement for
+	 * seqno will be the sequence number you are sending
+	 * data will be your data or an empty byte[] to indicate the last data packet
+	 *
 	 */
 	private static final long serialVersionUID = 8065498869540255100L;
 
