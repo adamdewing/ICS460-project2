@@ -30,6 +30,7 @@ public class UDPDataSender implements DataSender {
 	// Last packet sequence number
 	private int last_packet_seq = 0;
 
+	// TODO change all variables with underscores to camel case.  So  packet_size to pacetkSize and window_size to windowSize to conform to java naming standards
 	@Override
 	public void sendData(byte[] bytes, int packet_size, long timeout, String ipAddress, int port, int window_size) {
 
@@ -43,6 +44,8 @@ public class UDPDataSender implements DataSender {
 		// Get an input file data
 		FileLoader file_loader = new FileLoader();
 		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData());
+
+		// TODO IMPORTANT!!!! Suggestion : create a method that takes the byteList and returns a List<Packet>.
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -63,7 +66,7 @@ public class UDPDataSender implements DataSender {
 
 					// Copy segment of data bytes to array
 					bytes_to_send = Arrays.copyOfRange(data_out, last_seq_num * packet_size,
-							last_seq_num * packet_size + packet_size);
+							last_seq_num * packet_size + packet_size);  // TODO this won't work.  This will cause an index out of range error.
 
 					// Create packet object
 					Packet packet = new Packet(last_packet_seq, (last_packet_seq == last_packet_seq - 1) ? true : false,
@@ -73,7 +76,7 @@ public class UDPDataSender implements DataSender {
 					byte[] sendData = SerializeObject.objectToByteArray(packet);
 
 					// Create datagram packet to send
-					DatagramPacket sendPacket = new DatagramPacket(data_out, data_out.length, host_ip, port);
+					DatagramPacket sendPacket = new DatagramPacket(data_out, data_out.length, host_ip, port);  // TODO your DatagramPacket should be sending the sendData, which is the serialized packet object.  The data_out is the raw file data.
 
 					System.out.println("Sending packet with sequence number " + last_packet_seq + " and size "
 							+ sendPacket.getLength() + " bytes");
@@ -163,7 +166,7 @@ public class UDPDataSender implements DataSender {
 	private List<byte[]> byteArrayToChunks(byte[] bytes) {
 
 		List<byte[]> byteList = new ArrayList<byte[]>();
-		final int PACKET_SIZE = 1024;
+		final int PACKET_SIZE = 1024;  // TODO PACKET_SIZE should be replaced by a passed in parameter packetSize.  500 is the max packetSize.  The receiving class will break if you pass 1024 data bytes like this.
 
 		for (int i = 0; i < bytes.length; i += PACKET_SIZE) {
 			byte[] chunk_bytes = Arrays.copyOfRange(bytes, i, i + PACKET_SIZE);
