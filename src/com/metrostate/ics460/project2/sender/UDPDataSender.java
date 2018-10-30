@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Scanner;
 
 import com.metrostate.ics460.project2.Packet;
-import com.metrostate.ics460.project2.Payload;
 
 public class UDPDataSender implements DataSender {
 
@@ -53,58 +52,15 @@ public class UDPDataSender implements DataSender {
 			FileLoader data_sender = new FileLoader();
 			// Create a buffer to store the incoming datagrams packets
 			byte[] data_out = data_sender.loadData();
+			boolean timedOut = true;
+			while (timedOut) {
+				squence_num++;
 
-			while (i <= total_packets) {
 				try {
-					if (next_squence_num - base_squence_num < window_size) {
 
-						Packet packet = Payload.makePacket(next_squence_num);
-
-						/**
-						 * Sending few packets with some bit error with probability causing bit error is
-						 * 0.1. One in every 10 packets has bit error
-						 */
-						if (Math.random() < bitErrorProbability) {
-							String errorData = new String(packet.getData());
-							errorData = Payload.changeBit(errorData);
-							packet.setData(errorData.getBytes());
-						}
-
-						// Converting the packet object to bytes to send it to receiver
-						data_out = Payload.toBytes(packet);
-						DatagramPacket sendPacket = new DatagramPacket(data_out, data_out.length, host_ip, port);
-
-						// Printing packet information
-						if (protocolName.equalsIgnoreCase("GBN")) {
-							if (i > window_size + 1) {
-								SEQUENCE_NUMBER = packet.getSeq_num() % (window_size + 1);
-							} else {
-								SEQUENCE_NUMBER = packet.getSeq_num();
-							}
-						} else {
-							if (i > window_size * 2) {
-								SEQUENCE_NUMBER = packet.getSeq_num() % (window_size * 2);
-							} else {
-								SEQUENCE_NUMBER = packet.getSeq_num();
-							}
-						}
-
-						System.out.println("SENT PACKET #: " + i + " SEQ#: " + SEQUENCE_NUMBER);
-
-						// Send it to the receiver socket
-						socket.send(sendPacket);
-
-						if (base_squence_num == next_squence_num) {
-							socket.setSoTimeout(window_size);
-						}
-
-						// Add the packet to the sent list
-						sent_packet_list.add(packet);
-
-						// Increment sequence number
-						next_squence_num++;
-						i++;
-					}
+					DatagramPacket sendPacket = new DatagramPacket(data_out, data_out.length, host_ip, port);
+					// Send it to the receiver socket
+					socket.send(sendPacket);
 
 					// Create a datagram packet object for outgoing datagrams packets
 					send_packet = new DatagramPacket(data_out, data_out.length, host_ip, port);
