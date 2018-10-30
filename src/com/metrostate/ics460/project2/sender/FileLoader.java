@@ -28,20 +28,18 @@ public class FileLoader implements Loader {
 			try {
 				// get a file from user
 				File file = new File(file_name);
-					// read file into bytes[]
-					file_input_stream = new FileInputStream(file);
-					bytearray_stream = new ByteArrayOutputStream();
-					int readNum = 0;
-						while ((readNum = file_input_stream.read(buffer)) != -1) {
-							bytearray_stream.write(buffer, 0, readNum);
-							buffer = bytearray_stream.toByteArray();
-						}
+				// read file into bytes[]
+				file_input_stream = new FileInputStream(file);
+				bytearray_stream = new ByteArrayOutputStream();
+				int readNum = 0;
+				while ((readNum = file_input_stream.read(buffer)) != -1) {
+					bytearray_stream.write(buffer, 0, readNum);
+					buffer = bytearray_stream.toByteArray();
+				}
 
 			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				if (file_input_stream != null) {
@@ -57,7 +55,5 @@ public class FileLoader implements Loader {
 		return buffer;
 
 	}
-	
-	
 
 }

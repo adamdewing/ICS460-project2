@@ -1,104 +1,228 @@
 package com.metrostate.ics460.project2.sender;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 import com.metrostate.ics460.project2.Packet;
 
 public class UDPDataSender implements DataSender {
 
-	private Scanner scanner = new Scanner(System.in);
+	// Datagram for sent packet
 	private DatagramPacket send_packet = null;
-	private int SEQUENCE_NUMBER = -1;
-	private long end_time, start_time;
-	private int squence_num;
-	private int total_packets;
-	private int next_squence_num;
-	private int base_squence_num;
-	private double bitErrorProbability;
-	private int i;
-	private String protocolName;
+	// Datagram for received packet
+	private DatagramPacket recieve_packet = null;
+	// Probability of loss during packet sending
+	private static final double PROBABILITY = 0.1;
+	// Sequence number of the last packet sent
+	private int last_seq_num = 0;
+	// Sequence number of the last acknowledged packet
+	private int waitingForAck = 0;
+	// Last packet sequence number
+	private int last_packet_seq = 0;
 
 	@Override
-	public void sendData(byte[] bytes, int packetSize, long timeout, String ipAddress, int port, int window_size) {
+	public void sendData(byte[] bytes, int packet_size, long timeout, String ipAddress, int port, int window_size) {
 
 		System.out.println("+ ======================================================= +");
 		System.out.println("\t\tClient Started To Send Data");
 		System.out.println("+ ======================================================= +");
 
-		ArrayList<Packet> sent_packet_list = new ArrayList<>();
+		// List of all the packets sent
+		List<Packet> sent_packet_list = new ArrayList<Packet>();
+
+		// Get an input file data
+		FileLoader file_loader = new FileLoader();
+		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData());
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(0)) {
-			socket.setSoTimeout(3000);
-			// NetworkConnection.instance().getConnection() socket = new DatagramSocket();
-			// socket = NetworkConnection.instance().getConnection();
-			// Get sender’s address and port number from the datagram
+			// Default timeout
+			// socket.setSoTimeout(3000);
+
+			// Receiver address
 			InetAddress host_ip = InetAddress.getByName(ipAddress);
 
-			Integer squence_num = SEQUENCE_NUMBER;
-			int packets_sent = 0;
-			int bytes_sent = 0;
-
-			// Get an input file
-			FileLoader data_sender = new FileLoader();
 			// Create a buffer to store the incoming datagrams packets
-			byte[] data_out = data_sender.loadData();
-			boolean timedOut = true;
-			while (timedOut) {
-				squence_num++;
+			for (byte[] data_out : byteList) {
 
-				try {
+				// Packet sending while loop
+				while (last_seq_num - waitingForAck < window_size && last_seq_num < last_packet_seq) {
 
+					// Array to store a part of the bytes to send
+					byte[] bytes_to_send = new byte[packet_size];
+
+					// Copy segment of data bytes to array
+					bytes_to_send = Arrays.copyOfRange(data_out, last_seq_num * packet_size,
+							last_seq_num * packet_size + packet_size);
+
+					// Create packet object
+					Packet packet = new Packet(last_packet_seq, (last_packet_seq == last_packet_seq - 1) ? true : false,
+							bytes_to_send);
+
+					// Serialize the RDTPacket object
+					byte[] sendData = SerializeObject.objectToByteArray(packet);
+
+					// Create datagram packet to send
 					DatagramPacket sendPacket = new DatagramPacket(data_out, data_out.length, host_ip, port);
-					// Send it to the receiver socket
+
+					System.out.println("Sending packet with sequence number " + last_packet_seq + " and size "
+							+ sendPacket.getLength() + " bytes");
+
+					// Send a packet
 					socket.send(sendPacket);
 
-					// Create a datagram packet object for outgoing datagrams packets
-					send_packet = new DatagramPacket(data_out, data_out.length, host_ip, port);
+					// Send with some probability of loss
+					if (Math.random() > PROBABILITY) {
+						socket.send(sendPacket);
+					} else {
+						System.out.println("[X] Lost packet with sequence number " + last_packet_seq);
+					}
+					// Increase the last sent
+					last_seq_num++;
 
-					// Send datagram packets to a receiver server
-					socket.send(send_packet);
-					packets_sent++;
+				}
 
-					// timestamp = System.currentTimeMillis();
+				// Byte array for the ACK sent by the receiver
+				byte[] ack_bytes = new byte[40];
 
-					System.out.println(
-							"\nSENT PACKET #: " + packets_sent + "\tBYTE (" + (bytes_sent + data_out.length - 1) + " - "
-									+ (bytes_sent + data_out.length) + ")" + "\tSEQUENCE #: SEQ-" + squence_num);
+				// Creating packet for acknowledgment
+				DatagramPacket acknowledgment = new DatagramPacket(ack_bytes, ack_bytes.length);
 
-					byte[] data_in = new byte[packetSize];
+				try {
+					// If an acknowledgement was not received in the time specified (continues on
+					// the catch
+					// clause)
+					socket.setSoTimeout((int) timeout);
 
-					// Create a datagram packet object for incoming datagrams packets
-					DatagramPacket recieve_packet = new DatagramPacket(data_in, data_in.length);
+					// Receive the packet
+					socket.receive(acknowledgment);
 
-					// Receive incoming datagrams packets
-					socket.receive(recieve_packet);
+					// Unserialize the Acknowledged object
+					Packet ack_packet = (Packet) SerializeObject
+							.toObject(acknowledgment.getData());
 
-					// Receive acknowledgment message from the Server
-					String result = new String(data_in, 0, recieve_packet.getLength());
-					System.out.println("\nACKNOWLEDGMENT FROM HOSTNAME: " + recieve_packet.getAddress().getHostAddress()
-							+ " PORT #: " + recieve_packet.getPort() + " " + result);
+					System.out.println("Received ACK for " + ack_packet.getAckno());
 
-				} catch (IOException e) {
-					// If client don't get an acknowledgment, re-send sequence number
-					System.out.println("TIMEDOUT FOR SEQUENCE NUMBER:\t" + squence_num);
-					squence_num--;
-					e.printStackTrace();
+					// If this acknowledged is for the last packet, stop the sender
+					if (ack_packet.getAckno() == last_packet_seq) {
+						break;
+					}
+
+					waitingForAck = Math.max(waitingForAck, ack_packet.getAckno());
+
+				} catch (SocketTimeoutException e) {
+					// then send all the sent but non-acknowledged packets
+
+					for (int i = waitingForAck; i < last_seq_num; i++) {
+
+						// Serialize the RDTPacket object
+						byte[] sendData = SerializeObject.objectToByteArray(sent_packet_list.get(i));
+
+						// Create the packet
+						DatagramPacket packet = new DatagramPacket(sendData, sendData.length, host_ip, port);
+
+						// Send with some probability
+						if (Math.random() > PROBABILITY) {
+							try {
+								socket.send(packet);
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+						} else {
+							System.out.println("[X] Lost packet with sequence number " + sent_packet_list.get(i).getSeqno());
+						}
+
+						System.out.println("Resending packet with sequence number " + sent_packet_list.get(i).getSeqno()
+								+ " and size " + sendData.length + " bytes");
+					}
 				}
 
 			}
-		} catch (SocketException | UnknownHostException e1) {
+
+			System.out.println("Finished transmission");
+
+		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}
+
+	/**
+	 * Split byte[] to smaller chunks
+	 */
+	private List<byte[]> byteArrayToChunks(byte[] bytes) {
+
+		List<byte[]> byteList = new ArrayList<byte[]>();
+		final int PACKET_SIZE = 1024;
+
+		for (int i = 0; i < bytes.length; i += PACKET_SIZE) {
+			byte[] chunk_bytes = Arrays.copyOfRange(bytes, i, i + PACKET_SIZE);
+
+			byteList.add(chunk_bytes);
+		}
+
+		return byteList;
+	}
+
+	// Private class for Serializing Object
+	private static class SerializeObject {
+
+		// Convert an object to byte array
+		private static byte[] objectToByteArray(Packet packet2) {
+
+			Packet packet = new Packet();
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = null;
+
+			try {
+
+				oos = new ObjectOutputStream(bos);
+				oos.writeObject(packet);
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			try {
+				oos.flush();
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			byte[] data = bos.toByteArray();
+
+			return data;
+		}
+
+		private static Object toObject(byte[] bytes) {
+			ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+			ObjectInputStream ois = null;
+			try {
+				ois = new ObjectInputStream(bais);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			try {
+				return ois.readObject();
+			} catch (ClassNotFoundException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return bytes;
+		}
+
+	}
+
 }

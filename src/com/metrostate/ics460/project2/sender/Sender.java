@@ -6,15 +6,15 @@ import java.util.Scanner;
 public class Sender {
 
 	private Loader loader = new FileLoader();
-    private DataSender dataSender = new UDPDataSender();
+	private DataSender dataSender = new UDPDataSender();
 
-    public static void main(String[] args) throws IOException {
-    	Sender sender = new Sender();
-    	sender.start();
-    }
-    
-    public void start() {
-    	Scanner scanner = new Scanner(System.in);
+	public static void main(String[] args) throws IOException {
+		Sender sender = new Sender();
+		sender.start();
+	}
+
+	public void start() {
+		Scanner scanner = new Scanner(System.in);
 		System.out.print("Please provide ip address: ");
 		String ipAddress = scanner.next();
 		System.out.print("Please provide port number: ");
@@ -26,11 +26,11 @@ public class Sender {
 		System.out.print("Enter timeout interval: ");
 		long timeout = scanner.nextLong();
 		System.out.print("");
-    	byte[] bytes = loader.loadData();
-    	
-			dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize);
+		byte[] bytes = loader.loadData();
 
-    	scanner.close();
-    }
+		dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize);
+
+		scanner.close();
+	}
 
 }
