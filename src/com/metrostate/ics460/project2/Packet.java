@@ -19,18 +19,7 @@ public class Packet implements Serializable {
 	private short len;
 	private int ackno;
 	private int seqno;
-	public boolean last;
 	private byte[] data;
-
-	public Packet(int seqno, boolean last, byte[] data) {
-		this.seqno = seqno;
-		this.data = data;
-		this.last = last;
-	}
-
-	public Packet() {
-		
-	}
 
 	public short getCksum() {
 		return cksum;
