@@ -24,7 +24,7 @@ public class Sender {
 		System.out.print("Enter window size: ");
 		int windowSize = scanner.nextInt();
 		System.out.print("Enter timeout interval: ");
-		long timeout = scanner.nextLong();
+		int timeout = scanner.nextInt();
 		System.out.print("");
 		byte[] bytes = loader.loadData();
 
