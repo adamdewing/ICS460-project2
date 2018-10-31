@@ -3,6 +3,7 @@ package com.metrostate.ics460.project2.sender;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
@@ -43,9 +44,10 @@ public class UDPDataSender implements DataSender {
 
 		// Get an input file data
 		FileLoader file_loader = new FileLoader();
-		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData());
-
+		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData(), packet_size);
+		
 		// TODO IMPORTANT!!!! Suggestion : create a method that takes the byteList and returns a List<Packet>.
+		sent_packet_list = byteListToPacketList(bytes);
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -163,19 +165,45 @@ public class UDPDataSender implements DataSender {
 	/**
 	 * Split byte[] to smaller chunks
 	 */
-	private List<byte[]> byteArrayToChunks(byte[] bytes) {
+	private List<byte[]> byteArrayToChunks(byte[] bytes, int packet_size) {
 
 		List<byte[]> byteList = new ArrayList<byte[]>();
-		final int PACKET_SIZE = 1024;  // TODO PACKET_SIZE should be replaced by a passed in parameter packetSize.  500 is the max packetSize.  The receiving class will break if you pass 1024 data bytes like this.
+		  // TODO PACKET_SIZE should be replaced by a passed in parameter packetSize.  500 is the max packetSize.  The receiving class will break if you pass 1024 data bytes like this.
 
-		for (int i = 0; i < bytes.length; i += PACKET_SIZE) {
-			byte[] chunk_bytes = Arrays.copyOfRange(bytes, i, i + PACKET_SIZE);
+		for (int i = 0; i < bytes.length; i += packet_size) {
+			byte[] chunk_bytes = Arrays.copyOfRange(bytes, i, i + packet_size);
 
 			byteList.add(chunk_bytes);
 		}
 
 		return byteList;
+		
 	}
+	
+	// Convert byteList to a List<Packet Object>.
+	private static List<Packet> byteListToPacketList(byte[] byteList){
+		List<Packet> packet_list = new ArrayList<Packet>();
+		for(int i = 0; i < byteList.length; i++) {
+			ByteArrayInputStream bis = new ByteArrayInputStream(byteList);
+			ObjectInput objin = null;
+			try {
+				objin = new ObjectInputStream(bis);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			try {
+				packet_list.add((Packet) objin.readObject());
+			} catch (ClassNotFoundException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		return packet_list;
+		
+	}
+	//njkjkjlk
 
 	// Private class for Serializing Object
 	private static class SerializeObject {
