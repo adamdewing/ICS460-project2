@@ -47,7 +47,7 @@ public class UDPDataSender implements DataSender {
 		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData(), packet_size);
 		
 		// TODO IMPORTANT!!!! Suggestion : create a method that takes the byteList and returns a List<Packet>.
-		sent_packet_list = byteListToPacketList(byteList, bytes, window_size, window_size);
+		sent_packet_list = byteListToPacketList(byteList);
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -184,20 +184,10 @@ public class UDPDataSender implements DataSender {
 		List<Packet> packet_list = new ArrayList<Packet>();
 		for(int i = 0; i < byteList.size(); i++) {
 			Packet packet = new Packet();
-			/**
-			 * /TODO about creating the packet class for sending the packet:
-			 * cksum will always be 0
-			 * len  will be the data.length + 12
-			 * ackno will always be the sequence number you are waiting on an acknowledgement for
-			 * seqno will be the sequence number you are sending
-			 * data will be your data or an empty byte[] to indicate the last data packet
-			 *
-			 */
 			byte[] bytes =  byteList.get(i);
-			packet.setCksum((short) bytes.length);
+			packet.setCksum((short) 0);
 			packet.setLen((short) (bytes.length + 12));
-			packet.setAckno(i ++);
-			packet.setSeqno(i++);
+			packet.setSeqno(i+1);
 			packet.setData(bytes);
 			
 			packet_list.add(packet);
