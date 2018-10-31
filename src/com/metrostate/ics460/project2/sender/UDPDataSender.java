@@ -36,8 +36,6 @@ public class UDPDataSender implements DataSender {
 	private int packetSeq = 0;
 	// List for windows
 	private LinkedList<Packet> WindowsList;
-	// The queue for message
-	private ArrayBlockingQueue<Packet> queue = new ArrayBlockingQueue(packetSeq, false);
 
 	@Override
 	public void sendData(byte[] bytes, int packet_size, int timeout, String ipAddress, int port, int windowSize) {
