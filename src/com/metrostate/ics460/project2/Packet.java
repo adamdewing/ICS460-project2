@@ -20,6 +20,7 @@ public class Packet implements Serializable {
 	private int ackno;
 	private int seqno;
 	private byte[] data;
+	
 
 	public short getCksum() {
 		return cksum;

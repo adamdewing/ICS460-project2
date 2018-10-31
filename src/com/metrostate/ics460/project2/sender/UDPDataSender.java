@@ -47,7 +47,7 @@ public class UDPDataSender implements DataSender {
 		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData(), packet_size);
 		
 		// TODO IMPORTANT!!!! Suggestion : create a method that takes the byteList and returns a List<Packet>.
-		sent_packet_list = byteListToPacketList(bytes);
+		sent_packet_list = byteListToPacketList(byteList, bytes, window_size, window_size);
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(0)) {
@@ -71,8 +71,7 @@ public class UDPDataSender implements DataSender {
 							last_seq_num * packet_size + packet_size);  // TODO this won't work.  This will cause an index out of range error.
 
 					// Create packet object
-					Packet packet = new Packet(last_packet_seq, (last_packet_seq == last_packet_seq - 1) ? true : false,
-							bytes_to_send);
+					Packet packet = new Packet();
 
 					// Serialize the RDTPacket object
 					byte[] sendData = SerializeObject.objectToByteArray(packet);
@@ -181,29 +180,22 @@ public class UDPDataSender implements DataSender {
 	}
 	
 	// Convert byteList to a List<Packet Object>.
-	private static List<Packet> byteListToPacketList(byte[] byteList){
+	private static List<Packet> byteListToPacketList(List<byte[]> byteList, byte[] data, int seqno, int ackno){
 		List<Packet> packet_list = new ArrayList<Packet>();
-		for(int i = 0; i < byteList.length; i++) {
-			ByteArrayInputStream bis = new ByteArrayInputStream(byteList);
-			ObjectInput objin = null;
-			try {
-				objin = new ObjectInputStream(bis);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				packet_list.add((Packet) objin.readObject());
-			} catch (ClassNotFoundException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		for(int i = 0; i < byteList.size(); i++) {
+			Packet packet = new Packet();
+			packet.setCksum((short) 0);
+			packet.setLen((short) (data.length + 12));
+			packet.setAckno(ackno);
+			packet.setSeqno(seqno);
+			packet.setData(data);
+			
+			packet_list.add(packet);
 		}
-		
 		return packet_list;
 		
 	}
-	//njkjkjlk
+	
 
 	// Private class for Serializing Object
 	private static class SerializeObject {
