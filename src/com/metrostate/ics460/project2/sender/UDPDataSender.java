@@ -180,18 +180,29 @@ public class UDPDataSender implements DataSender {
 	}
 	
 	// Convert byteList to a List<Packet Object>.
-	private static List<Packet> byteListToPacketList(List<byte[]> byteList, byte[] data, int seqno, int ackno){
+	private static List<Packet> byteListToPacketList(List<byte[]> byteList){
 		List<Packet> packet_list = new ArrayList<Packet>();
 		for(int i = 0; i < byteList.size(); i++) {
 			Packet packet = new Packet();
-			packet.setCksum((short) 0);
-			packet.setLen((short) (data.length + 12));
-			packet.setAckno(ackno);
-			packet.setSeqno(seqno);
-			packet.setData(data);
+			/**
+			 * /TODO about creating the packet class for sending the packet:
+			 * cksum will always be 0
+			 * len  will be the data.length + 12
+			 * ackno will always be the sequence number you are waiting on an acknowledgement for
+			 * seqno will be the sequence number you are sending
+			 * data will be your data or an empty byte[] to indicate the last data packet
+			 *
+			 */
+			byte[] bytes =  byteList.get(i);
+			packet.setCksum((short) bytes.length);
+			packet.setLen((short) (bytes.length + 12));
+			packet.setAckno(i ++);
+			packet.setSeqno(i++);
+			packet.setData(bytes);
 			
 			packet_list.add(packet);
 		}
+		
 		return packet_list;
 		
 	}
