@@ -16,23 +16,12 @@ import com.metrostate.ics460.project2.Packet;
 
 public class UDPDataSender implements DataSender {
 
-	// Datagram for sent packet
-	private DatagramPacket sendPacket = null;
-	// Datagram for received packet
-	private DatagramPacket recievePacket = null;
 	// Probability of loss during packet sending
 	private static final double ERROR_PROBABILITY = 0.1;
-	private int totalPackets;
-	// Sequence number of the last packet sent
-	private int seqNum = 1;
-	// Sequence number of the last acknowledged packet
-	private int waitingForAck = 0;  // TODO you need to initialize this to windowSize
-	// Last packet sequence number
-	private int packetSeq = 0;
-	// A position of packet is being sent which is (in windowBuffer)
-	private int windowIndex;
-	// Create an array of packet for slide window buffer
-	private Packet[] windowBuffer;
+	// Datagram for received packet
+	private DatagramPacket recievePacket = null;
+	// Datagram for sent packet
+	private DatagramPacket sendPacket = null;
 
 
 	@Override
@@ -45,7 +34,13 @@ public class UDPDataSender implements DataSender {
 		// List of all the packets to sent which is not yet been acknowledged in a buffer
 		List<Packet> sent_packet_list = new ArrayList<Packet>();
 		// Total number of packets
-		totalPackets = sent_packet_list.size();
+		int totalPackets = sent_packet_list.size();
+		// Sequence number of the last acknowledged packet
+		int waitingForAck = windowSize;
+		// Sequence number of the last packet sent
+		int lastSequNum = 0;
+		// A position of packet is being sent which is (in windowBuffer)
+		int windowIndex = 1;
 
 		// Get an input file data
 		FileLoader file_loader = new FileLoader();
@@ -55,7 +50,6 @@ public class UDPDataSender implements DataSender {
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(port)) {
-			// Default timeout
 			socket.setSoTimeout(timeout);
 
 			// Receiver address
@@ -66,33 +60,34 @@ public class UDPDataSender implements DataSender {
 
 			// A byte array to store serialized packet to send
 			byte[] packet_out = SerializeObject.serializePacketObject((Packet) sent_packet_list);
+			// Create an array of packet for slide window buffer
+			Packet[] windowBuffer = new Packet[windowSize];
 
 			while(true) {
-				// Create datagram packet to send
-				sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
-
-				// Create an array of packet for slide window buffer
-				windowBuffer = new Packet[windowSize];
-
-				while(totalPackets >= windowSize) {
-
+				
+				while(lastSequNum - waitingForAck < windowBuffer.length && lastSequNum < totalPackets) {
+					// Create datagram packet to send
+					sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
 					// Create packet with its index position
 					Packet packetPosition = new Packet();
-					windowBuffer[seqNum] = packetPosition;
-
+					windowBuffer[lastSequNum] = packetPosition;
+					
 					// Subtract window size from a total packet
 					totalPackets = totalPackets - windowSize;
-					seqNum++;
-
+					lastSequNum++;
+					
 					if(windowIndex == totalPackets) {
+						windowIndex++;
 						break;
 					}
+					// Send all the packet in windowBuffer
+					for (int i = 0; i <= windowIndex; i++) {
+						System.out.println("Sending packets " + packet_out + "  " + packet_out.length + " bytes to client " + windowBuffer[i].getSeqno());
+					}
+					
+					socket.send(sendPacket);
 				}
-				// Send all the packet in windowBuffer
-				for (int j = 0; j <= windowIndex; j++) {
-					System.out.println("Sending " + packet_out + "  " + packet_out.length + " bytes to client " + windowBuffer[j]);
 
-				}
 			}
 
 		} catch (IOException e1) {

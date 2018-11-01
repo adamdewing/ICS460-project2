@@ -15,7 +15,6 @@ public class FileLoader implements Loader {
 	private byte[] buffer = new byte[128];
 	private FileInputStream file_input_stream;
 	private String file_name;
-	private Map<Integer, byte[]> bytes_array;
 
 	@Override
 	public byte[] loadData() {
