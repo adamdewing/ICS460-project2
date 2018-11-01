@@ -27,18 +27,13 @@ public class UDPDataSender implements DataSender {
 	@Override
 	public void sendData(byte[] bytes, int packet_size, int timeout, String ipAddress, int port, int windowSize) {
 
-		System.out.println("+ ======================================================= +");
-		System.out.println("\t\tClient Started To Send Data");
-		System.out.println("+ ======================================================= +");
-
 		// List of all the packets to sent which is not yet been acknowledged in a buffer
 		List<Packet> sent_packet_list = new ArrayList<Packet>();
-		// Total number of packets
-		int totalPackets = sent_packet_list.size();
+
 		// Sequence number of the last acknowledged packet
 		int waitingForAck = windowSize;
 		// Sequence number of the last packet sent
-		int lastSequNum = 0;
+		int lastSequNum = 1;
 		// A position of packet is being sent which is (in windowBuffer)
 		int windowIndex = 1;
 
@@ -57,14 +52,19 @@ public class UDPDataSender implements DataSender {
 
 			// Convert byteList to a List of Packet Object
 			sent_packet_list = byteListToPacketList(byteList);
-
+			// For Debugging purpose
+			System.out.println("For Debugging purpose to check the data is existed");
+			sent_packet_list.forEach(items->System.out.print(items.getData() + " "));
+			
 			// A byte array to store serialized packet to send
-			byte[] packet_out = SerializeObject.serializePacketObject((Packet) sent_packet_list);
+			byte[] packet_out = SerializeObject.serializePacketObject(sent_packet_list);
+			// Total number of packets
+			int totalPackets = sent_packet_list.size();
 			// Create an array of packet for slide window buffer
 			Packet[] windowBuffer = new Packet[windowSize];
 
 			while(true) {
-				
+			
 				while(lastSequNum - waitingForAck < windowBuffer.length && lastSequNum < totalPackets) {
 					// Create datagram packet to send
 					sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
@@ -80,12 +80,14 @@ public class UDPDataSender implements DataSender {
 						windowIndex++;
 						break;
 					}
+					
+					System.out.println(" ");
 					// Send all the packet in windowBuffer
 					for (int i = 0; i <= windowIndex; i++) {
-						System.out.println("Sending packets " + packet_out + "  " + packet_out.length + " bytes to client " + windowBuffer[i].getSeqno());
+						System.out.println("Sending packets " + packet_out + "  " + packet_out.length);
 					}
-					
 					socket.send(sendPacket);
+					
 				}
 
 			}
@@ -135,7 +137,7 @@ public class UDPDataSender implements DataSender {
 	private static class SerializeObject {
 
 		// Convert an object to byte array
-		private static byte[] serializePacketObject(Packet packet) {
+		private static byte[] serializePacketObject(List<Packet> sent_packet_list) {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = null;
 			try {
@@ -145,7 +147,7 @@ public class UDPDataSender implements DataSender {
 				e1.printStackTrace();
 			}
 			try {
-				oos.writeObject(packet);
+				oos.writeObject(sent_packet_list);
 			} catch (IOException e) {
 
 				e.printStackTrace();

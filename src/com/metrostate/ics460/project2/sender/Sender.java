@@ -14,6 +14,11 @@ public class Sender {
 	}
 
 	public void start() {
+
+		System.out.println("+ ======================================================= +");
+		System.out.println("\t\tClient Starting Transfer Data");
+		System.out.println("+ ======================================================= +");
+		
 		Scanner scanner = new Scanner(System.in);
 		System.out.print("Please provide ip address: ");
 		String ipAddress = scanner.next();
@@ -25,7 +30,7 @@ public class Sender {
 		int windowSize = scanner.nextInt();
 		System.out.print("Enter timeout interval: ");
 		int timeout = scanner.nextInt();
-		System.out.print("");
+		System.out.println("");
 		byte[] bytes = loader.loadData();
 
 		dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize);
