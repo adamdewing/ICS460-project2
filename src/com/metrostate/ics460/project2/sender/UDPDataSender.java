@@ -29,9 +29,9 @@ public class UDPDataSender implements DataSender {
 	private static final double ERROR_PROBABILITY = 0.1;
 	private int totalPackets = 0;
 	// Sequence number of the last packet sent
-	private int seqNum = 0;
+	private int seqNum = 0;   // TODO seqNo starts at 1
 	// Sequence number of the last acknowledged packet
-	private int waitingForAck = 0;
+	private int waitingForAck = 0;  // TODO you need to initialize this to windowSize
 	// Last packet sequence number
 	private int packetSeq = 0;
 	// List for windows
@@ -61,18 +61,18 @@ public class UDPDataSender implements DataSender {
 			InetAddress host_ip = InetAddress.getByName(ipAddress);
 
 			// Create a buffer to store the incoming datagrams packets
-			for (byte[] bytes_to_send : byteList) {
+			for (byte[] bytes_to_send : byteList) {  // TODO You just want to do a while(true) loop until you get the Ack Packet back for the last Packet
 
 				// Packet sending while loop
 				while (seqNum - waitingForAck < windowSize && seqNum < packetSeq) {
 					
 					// Convert byteList to a List of Packet Object
-					sent_packet_list = byteListToPacketList(byteList);
+					sent_packet_list = byteListToPacketList(byteList);  // TODO you are doing this in a loop.  This needs to be outside the loop.
 					// Total number of packets
 					
 					// A byte array to store serialized packet to send
-					byte[] packet_out = SerializeObject.serializePacketObject((Packet) sent_packet_list);
-					
+					byte[] packet_out = SerializeObject.serializePacketObject((Packet) sent_packet_list);  // TODO you are serializing the entire list.  You only want to send one Packet object with each DatagramPacket
+
 					totalPackets = sent_packet_list.size();
 	
 					// Create datagram packet to send
@@ -89,6 +89,7 @@ public class UDPDataSender implements DataSender {
 						System.out.println("[X] Lost packet with sequence number " + packetSeq);
 					}
 
+					// TODO removed unused code
 					// Copy a part of the bytes to send into byte array
 					byte[] sentPacketCopy = Arrays.copyOfRange(packet_out, seqNum * packet_size,
 							seqNum * packet_size + packet_size);
@@ -102,15 +103,17 @@ public class UDPDataSender implements DataSender {
 				}
 
 				// Byte array for acknowledged packet object sent by the receiver
-				byte[] ack_bytes = new byte[0];
+				byte[] ack_bytes = new byte[0];    // TODO you don't know how big the Ack will be, but it WILL be greater than 0.  I would just use 1024.
 
 				// Creating datagram packet for acknowledgment
 				DatagramPacket ackPacket = new DatagramPacket(ack_bytes, ack_bytes.length);
 
 				try {
 					// Timeout will trigger if an acknowledgement was not received in the time specified
-					socket.setSoTimeout(timeout);
+					socket.setSoTimeout(timeout);  // TODO you already set the socket SoTimeout
 
+					// TODO you want to send all the Packet objects that need to be sent in the window.
+					// TODO here you are sending only one Packet and then waiting.  This is NOT the sliding window way
 					// Receive the packet
 					socket.receive(ackPacket);
 
@@ -128,6 +131,7 @@ public class UDPDataSender implements DataSender {
 					waitingForAck = Math.max(waitingForAck, acknPacket.getAckno());
 
 				} catch (SocketTimeoutException | ClassNotFoundException e) {
+					// TODO you only want to send the Packet that timed out, not all DatagramPackets
 					// Re-send all non-acknowledged packets
 					for (int i = waitingForAck; i < seqNum; i++) {
 
@@ -140,6 +144,7 @@ public class UDPDataSender implements DataSender {
 						// Send with some probability
 						if (Math.random() > ERROR_PROBABILITY) {
 							try {
+								// TODO remove ALL error code.  Need to get things working first!!!
 								socket.send(packet);
 							} catch (IOException e1) {
 								e1.printStackTrace();
