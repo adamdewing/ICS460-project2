@@ -57,14 +57,17 @@ public class UDPDataSender implements DataSender {
 			sent_packet_list.forEach(items->System.out.print(items.getData() + " "));
 			
 			// A byte array to store serialized packet to send
-			byte[] packet_out = SerializeObject.serializePacketObject(sent_packet_list);
+			byte[] packet_out = SerializeObject.serializePacketObject(sent_packet_list);  // TODO packet_out has to be serialized in the while loop.  Right now you are sending the same packet data over and over
+
 			// Total number of packets
 			int totalPackets = sent_packet_list.size();
 			// Create an array of packet for slide window buffer
 			Packet[] windowBuffer = new Packet[windowSize];
 
 			while(true) {
-			
+
+				// TODO you are on the right track.  You are sending all the packets in the window.
+				// TODO you should check and only send the ones that haven't been sent once yet, even the first time.
 				while(lastSequNum - waitingForAck < windowBuffer.length && lastSequNum < totalPackets) {
 					// Create datagram packet to send
 					sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
@@ -89,6 +92,7 @@ public class UDPDataSender implements DataSender {
 					socket.send(sendPacket);
 					
 				}
+				// TODO receive DatagramPacket here and have timeout logic
 
 			}
 
