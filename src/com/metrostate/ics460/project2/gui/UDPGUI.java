@@ -335,36 +335,4 @@ public class UDPGUI extends Application {
 		});
 	}
 
-
-
-	/**
-	 * @return the client_ip_input
-	 */
-	public TextField getClient_ip_input() {
-		return client_ip_input;
-	}
-
-	/**
-	 * @param client_ip_input
-	 *            the client_ip_input to set
-	 */
-	public void setClient_ip_input(TextField client_ip_input) {
-		this.client_ip_input = client_ip_input;
-	}
-
-	/**
-	 * @return the client_port_input
-	 */
-	public TextField getClient_port_input() {
-		return client_port_input;
-	}
-
-	/**
-	 * @param client_port_input
-	 *            the client_port_input to set
-	 */
-	public void setClient_port_input(TextField client_port_input) {
-		this.client_port_input = client_port_input;
-	}
-
 }
