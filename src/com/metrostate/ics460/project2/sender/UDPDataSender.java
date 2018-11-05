@@ -47,71 +47,71 @@ public class UDPDataSender implements DataSender {
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(port)) {
 			socket.setSoTimeout(timeout);
-			
-			// Receiver address
-			InetAddress host_ip = InetAddress.getByName(ipAddress);
-
-			// Set to slide window size
-			packetWaitingForAck = windowSize;
-			
-			// Convert byteList to a List of Packet Object and add into a list
-			List<Packet> sent_packet_list = byteListToPacketList(byteList);
-			
-			// Total number of packets
-			int totalPackets = sent_packet_list.size();
-
-			// Create an array of packet for slide window buffer
-			Packet[] windowBuffer = new Packet[windowSize];
-
-			// Loop controller
-			boolean loop = true;
-			while(loop) {
-				
-				while(lastSequNum - packetWaitingForAck  <= windowBuffer.length && lastSequNum <= totalPackets) {
-					// A byte array to store serialized packet to send
-					byte[] packet_out = SerializeObject.serializePacketObject(sent_packet_list);
-					
-					// Create datagram packet to send
-					sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
-					
-					// Get packet object to determine index of the packet in window buffer
-					Packet packetIndex  = new Packet();
-					windowBuffer[lastSequNum] = packetIndex;
-					
-
-					// Subtract window size from a total packet
-					totalPackets = totalPackets - windowSize;
-					lastSequNum++;
-
-					System.out.println(" ");
-					// Send all the packet in windowBuffer
-					for (int i = 0; i < windowBuffer.length; i++) {
-
-						// For the last packet
-						if (totalPackets > 0 && totalPackets > packet_size) {
-							byte[] remainingPacket = new byte[totalPackets];
-							Packet remainPacketIndex = new Packet();
-							windowBuffer[lastSequNum] = remainPacketIndex;
-							DatagramPacket sendLastPacket = new DatagramPacket(remainingPacket, remainingPacket.length, host_ip, port);
-							System.out.println("Sending last packet " + remainingPacket + "  " + remainingPacket.length);
-							socket.send(sendLastPacket);
-							totalPackets = 0;
-						}
-
-						byte[] data_in = new byte[packet_size];
-						// Create a datagram packet object for incoming datagrams packets
-						DatagramPacket recieve_packet = new DatagramPacket(data_in , data_in.length);
-						
-						if(isPacketAcknowledge(recieve_packet, port, packetBufferIndex)) {				
-							System.out.println("Sending packets #: " +  i  + " " + packet_out + " " + packet_out.length);
-							socket.send(sendPacket);
-							windowSize++;
-						}
-
-					}
-					
-				}
-			}
+//			
+//			// Receiver address
+//			InetAddress host_ip = InetAddress.getByName(ipAddress);
+//
+//			// Set to slide window size
+//			packetWaitingForAck = windowSize;
+//			
+//			// Convert byteList to a List of Packet Object and add into a list
+//			List<Packet> sent_packet_list = byteListToPacketList(byteList);
+//			
+//			// Total number of packets
+//			int totalPackets = sent_packet_list.size();
+//
+//			// Create an array of packet for slide window buffer
+//			Packet[] windowBuffer = new Packet[windowSize];
+//
+//			// Loop controller
+//			boolean loop = true;
+//			while(loop) {
+//				
+//				while(lastSequNum - packetWaitingForAck  <= windowBuffer.length && lastSequNum <= totalPackets) {
+//					// A byte array to store serialized packet to send
+//					byte[] packet_out = SerializeObject.serializePacketObject(sent_packet_list);
+//					
+//					// Create datagram packet to send
+//					sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
+//					
+//					// Get packet object to determine index of the packet in window buffer
+//					Packet packetIndex  = new Packet();
+//					windowBuffer[lastSequNum] = packetIndex;
+//					
+//
+//					// Subtract window size from a total packet
+//					totalPackets = totalPackets - windowSize;
+//					lastSequNum++;
+//
+//					System.out.println(" ");
+//					// Send all the packet in windowBuffer
+//					for (int i = 0; i < windowBuffer.length; i++) {
+//
+//						// For the last packet
+//						if (totalPackets > 0 && totalPackets > packet_size) {
+//							byte[] remainingPacket = new byte[totalPackets];
+//							Packet remainPacketIndex = new Packet();
+//							windowBuffer[lastSequNum] = remainPacketIndex;
+//							DatagramPacket sendLastPacket = new DatagramPacket(remainingPacket, remainingPacket.length, host_ip, port);
+//							System.out.println("Sending last packet " + remainingPacket + "  " + remainingPacket.length);
+//							socket.send(sendLastPacket);
+//							totalPackets = 0;
+//						}
+//
+//						byte[] data_in = new byte[packet_size];
+//						// Create a datagram packet object for incoming datagrams packets
+//						DatagramPacket recieve_packet = new DatagramPacket(data_in , data_in.length);
+//						
+//						if(isPacketAcknowledge(recieve_packet, port, packetBufferIndex)) {				
+//							System.out.println("Sending packets #: " +  i  + " " + packet_out + " " + packet_out.length);
+//							socket.send(sendPacket);
+//							windowSize++;
+//						}
+//
+//					}
+//					
+//				}
+//			}
 
 		}
 		
