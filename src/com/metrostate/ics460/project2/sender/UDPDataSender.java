@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.metrostate.ics460.project2.Packet;
+import com.metrostate.ics460.project2.packet.Packet;
 
 public class UDPDataSender implements DataSender {
 

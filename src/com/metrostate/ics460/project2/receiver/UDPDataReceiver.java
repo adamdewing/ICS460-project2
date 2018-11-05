@@ -1,7 +1,5 @@
 package com.metrostate.ics460.project2.receiver;
 
-import com.metrostate.ics460.project2.Packet;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,6 +11,8 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.metrostate.ics460.project2.packet.Packet;
 
 public class UDPDataReceiver implements DataReceiver {
 
