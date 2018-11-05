@@ -9,7 +9,10 @@ public class Receiver {
 
     public void start() {
         DataReceiver dataReceiver = new UDPDataReceiver();
-        dataReceiver.receiveData("127.0.0.1", 11, 2, 0);
+        byte[] bytes = dataReceiver.receiveData("127.0.0.1", 11, 2, 0);
+
+        Saver saver = new FileSaver();
+        saver.saveData(bytes);
     }
 
 }
