@@ -28,7 +28,7 @@ public class UDPDataSender implements DataSender {
 	@Override
 	public void sendData(byte[] bytes, int packet_size, int timeout, String receiverIpAddress, int receiverPort, int windowSize, double errors) {
         System.out.println("+ =========================================================== +");
-        System.out.println("\t\tServer Started To Recieved Data");
+        System.out.println("\t\tClient Started To Send Data");
         System.out.println("+ =========================================================== +");
         this.errorRate = errors / 100;
 

@@ -27,9 +27,6 @@ public class UDPDataReceiver implements DataReceiver {
 
     @Override
     public byte[] receiveData(String receiverIpAddress, int receiverPort, int windowSize, double errors) {
-        System.out.println("+ =========================================================== +");
-        System.out.println("\t\tServer Started To Recieved Data");
-        System.out.println("+ =========================================================== +");
         this.errorRate = errors / 100;
         DatagramSocket socket = null;
         try {

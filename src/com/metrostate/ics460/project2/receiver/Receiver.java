@@ -11,7 +11,7 @@ public class Receiver {
 
     public void start() {
         System.out.println("+ =========================================================== +");
-        System.out.println("\t\tServer Started To Recieved Data");
+        System.out.println("\t\tServer Started To Receive Data");
         System.out.println("+ =========================================================== +");
 		Scanner scanner = new Scanner(System.in);
 		System.out.print("Please provide ip address: ");
