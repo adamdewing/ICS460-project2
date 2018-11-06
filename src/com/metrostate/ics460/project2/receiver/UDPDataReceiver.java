@@ -13,7 +13,6 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class UDPDataReceiver implements DataReceiver {
 
@@ -36,7 +35,7 @@ public class UDPDataReceiver implements DataReceiver {
                 socket.receive(datagramPacket);
                 Packet packet = deserializePacket(datagramPacket);
                 int packetSize = 0;
-                if(packet.getData() != null){
+                if(packet != null && packet.getData() != null){
                     packetSize = packet.getData().length;
                 }
                 if (isValidPacket(packet)) {
@@ -57,6 +56,7 @@ public class UDPDataReceiver implements DataReceiver {
                 }
                 if(isAllPacketsReceived()){
                     // We are all done!
+                    System.out.println("We have received all " + byteMap.size() + " packets.");
                     break;
                 }
             }
@@ -73,7 +73,7 @@ public class UDPDataReceiver implements DataReceiver {
                 socket.close();
             }
         }
-        return mergeByteList();
+        return mergeByteMap();
     }
 
     private boolean isPacketAlreadyReceived(Packet packet) {
@@ -221,7 +221,7 @@ public class UDPDataReceiver implements DataReceiver {
      * @return
      */
     private boolean isValidPacket(Packet packet) {
-        return packet.getCksum() == 0 ? true : false;
+        return packet != null && packet.getCksum() == 0 ? true : false;
     }
 
     /**
@@ -231,7 +231,7 @@ public class UDPDataReceiver implements DataReceiver {
      * @return
      */
     private boolean isLastPacket(Packet packet) {
-        return packet.getData() == null || packet.getData().length == 0 ? true : false;
+        return packet != null && packet.getData() == null || packet.getData().length == 0 ? true : false;
     }
 
 
@@ -255,7 +255,7 @@ public class UDPDataReceiver implements DataReceiver {
      *
      * @return
      */
-    private byte[] mergeByteList() {
+    private byte[] mergeByteMap() {
         // Find the total length of all the data combined
         int totalLength = 0;
         for (int i = 1; i <= byteMap.size(); i++) {

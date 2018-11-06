@@ -20,14 +20,14 @@ public class NetworkSendLogger {
     public enum DatagramCondition{
         SENT,
         DROP,
-        ERROR;
+        ERROR
     }
 
     public enum AckStatus{
         DuplAck,
         ErrAck,
         MoveWnd,
-        NoMoveWnd;
+        NoMoveWnd
     }
 
     private long getStartOffset(Packet packet, int packetSize){
