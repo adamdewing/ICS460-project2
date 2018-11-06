@@ -13,6 +13,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class UDPDataReceiver implements DataReceiver {
 
@@ -21,15 +22,15 @@ public class UDPDataReceiver implements DataReceiver {
     private final static int ERROR_FACTOR = 3;
 
     private Map<Integer, byte[]> byteMap = new HashMap<>();
-    private int errorRate = 0;
+    private double errorRate = 0;
     private int lastPacketSequenceNumber = 0;
 
     @Override
-    public byte[] receiveData(String receiverIpAddress, int receiverPort, int windowSize, int errorRate) {
+    public byte[] receiveData(String receiverIpAddress, int receiverPort, int windowSize, double errors) {
         System.out.println("+ =========================================================== +");
         System.out.println("\t\tServer Started To Recieved Data");
         System.out.println("+ =========================================================== +");
-        this.errorRate = errorRate;
+        this.errorRate = errors / 100;
         DatagramSocket socket = null;
         try {
             socket = new DatagramSocket(receiverPort);

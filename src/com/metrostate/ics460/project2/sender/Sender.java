@@ -44,13 +44,14 @@ public class Sender {
 //		scanner.close();
 
 		byte[] bytes = loader.loadData();
-		int packetSize = 500;
+		int packetSize = 100;
 		int timeout = 2000;
 		String ipAddress = "127.0.0.1";
 		int port = 11;
-		int windowSize = 2;
+		int windowSize = 5;
+		double errors = .5;
 
-		dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize);
+		dataSender.sendData(bytes, packetSize, timeout, ipAddress, port, windowSize, errors);
 
 	}
 

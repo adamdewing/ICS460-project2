@@ -14,6 +14,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class UDPDataSender implements DataSender {
 
@@ -22,12 +23,14 @@ public class UDPDataSender implements DataSender {
 	private static final int port = 13;
 	// Sequence number of the last acknowledged packet
     int nextFrameExpected = 1;
+    double errorRate = 0;
 
 	@Override
-	public void sendData(byte[] bytes, int packet_size, int timeout, String receiverIpAddress, int receiverPort, int windowSize) {
+	public void sendData(byte[] bytes, int packet_size, int timeout, String receiverIpAddress, int receiverPort, int windowSize, double errors) {
         System.out.println("+ =========================================================== +");
         System.out.println("\t\tServer Started To Recieved Data");
         System.out.println("+ =========================================================== +");
+        this.errorRate = errors / 100;
 
 		// Add byte[] into a list by split byte to smaller chunks byte
 		List<byte[]> byteList = byteArrayToChunks(bytes, packet_size);
@@ -211,4 +214,30 @@ public class UDPDataSender implements DataSender {
 			return packet;
 		}
 	}
+
+    private Packet corruptDelayDropPacket(Packet packet){
+        System.out.println(Math.random());
+        if(Math.random() < errorRate){
+            // We are going to mess up the packet
+            double error = Math.random();
+            if(error < .33){
+                // Drop
+                return null;
+            }else if(error < .66){
+                // Corrupt
+                packet.setCksum((short) 1);
+            }else{
+                // Delay
+                int min = 1;
+                int max = 3;
+                try {
+                    TimeUnit.SECONDS.sleep((int)(Math.random()*((max-min)+1))+min);
+                } catch (InterruptedException e) {
+                    System.out.println("System was interrupted while delaying packet with sequence number :" + packet.getSeqno());
+                    e.printStackTrace();
+                }
+            }
+        }
+        return packet;
+    }
 }
