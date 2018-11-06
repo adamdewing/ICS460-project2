@@ -1,28 +1,33 @@
-package com.metrostate.ics460.project2;
+package com.metrostate.ics460.project2.sender;
 
 import com.metrostate.ics460.project2.packet.Packet;
 
-public class NetworkLogger {
-    
-    
+import java.util.logging.Logger;
+
+public class NetworkSendLogger {
+
     public void logSendPacket(boolean hasAlreadyBeenSent, Packet packet, int packetSize, DatagramCondition condition){
         String status = hasAlreadyBeenSent ? "ReSend " : "SENDing ";
         Long startOffset = getStartOffset(packet, packetSize);
         Long endOffset = getEndOffset(startOffset, packetSize);
         System.out.println(status + " " + packet.getSeqno() + " " + startOffset + ":" + endOffset + " " + System.currentTimeMillis() + " " + condition);
     }
-    
-    public void logReceivePacket(boolean isPacketAlreadyReceived, Packet packet, int packetSize){
-        String status = isPacketAlreadyReceived ? "DUPL " : "RECV ";
-        Long startOffset = getStartOffset(packet, packetSize);
-        Long endOffset = getEndOffset(startOffset, packetSize);
-        System.out.println(status + " " + packet.getSeqno() + " " + startOffset + ":" + endOffset + " " + System.currentTimeMillis());
+
+    public void logReceiveAck(Packet packet, AckStatus ackStatus){
+        System.out.println("AckRcvd " + " " + packet.getAckno() + " " + ackStatus);
     }
 
     public enum DatagramCondition{
         SENT,
         DROP,
         ERROR;
+    }
+
+    public enum AckStatus{
+        DuplAck,
+        ErrAck,
+        MoveWnd,
+        NoMoveWnd;
     }
 
     private long getStartOffset(Packet packet, int packetSize){

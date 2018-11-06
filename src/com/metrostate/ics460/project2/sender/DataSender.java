@@ -4,6 +4,6 @@ package com.metrostate.ics460.project2.sender;
 
 public interface DataSender {
 
-	public void sendData(byte[] bytes, int packetSize, int timeout, String ipAddress, int port, int windowSize);
+	void sendData(byte[] bytes, int packetSize, int timeout, String ipAddress, int port, int windowSize);
 	
 }

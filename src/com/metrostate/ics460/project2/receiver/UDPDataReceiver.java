@@ -16,6 +16,7 @@ import java.util.Map;
 
 public class UDPDataReceiver implements DataReceiver {
 
+    private final static NetworkReceiverLogger logger = new NetworkReceiverLogger();
     private final static int MAX_BUFFER_SIZE = 1024;
     private final static int ERROR_FACTOR = 3;
 
@@ -36,13 +37,16 @@ public class UDPDataReceiver implements DataReceiver {
                 DatagramPacket datagramPacket = new DatagramPacket(new byte[MAX_BUFFER_SIZE], MAX_BUFFER_SIZE);
                 socket.receive(datagramPacket);
                 Packet packet = deserializePacket(datagramPacket);
-                System.out.println("Received packet " + packet);
+                int packetSize = 0;
+                if(packet.getData() != null){
+                    packetSize = packet.getData().length;
+                }
                 if (isValidPacket(packet)) {
                     if (!isPacketAlreadyReceived(packet)) {
-                        logReceivePacket(false, packet, 500);
+                        logger.logReceivePacket(false, packet, isPacketReceivedOutOfSequence(packet));
                         addPacketToList(packet);
                     } else {
-                        logReceivePacket(true, packet, 500);
+                        logger.logReceivePacket(true, packet, isPacketReceivedOutOfSequence(packet));
                         // We already received this packet so just throw it away
                     }
                     if (isLastPacket(packet)) {
@@ -95,7 +99,7 @@ public class UDPDataReceiver implements DataReceiver {
         byte[] bytes = serializePacket(ackPacket);
         DatagramPacket datagramPacket = null;
         datagramPacket = new DatagramPacket(bytes, bytes.length, receivePacket.getAddress(), receivePacket.getPort());
-        logAckPacket(ackPacket, DatagramCondition.SENT);
+        logger.logAckPacket(ackPacket, NetworkReceiverLogger.DatagramCondition.SENT);
         try {
             socket.send(datagramPacket);
         } catch (IOException e) {
@@ -281,23 +285,6 @@ public class UDPDataReceiver implements DataReceiver {
         return false;
     }
 
-    private void logReceivePacket(boolean isPacketAlreadyReceived, Packet packet, int packetSize) {
-        String status = isPacketAlreadyReceived ? "DUPL " : "RECV ";
-        String packetStatus = "";
-        if (packet.getCksum() == 1) {
-            packetStatus = "CRPT";
-        } else if (isPacketReceivedOutOfSequence(packet)) {
-            packetStatus = "!Seq";
-        } else {
-            packetStatus = "RECV";
-        }
-        System.out.println(status + " " + System.currentTimeMillis() + " " + packet.getSeqno() + " " + packetStatus);
-    }
-
-    private void logAckPacket(Packet packet, DatagramCondition condition) {
-        System.out.println("SENDing ACK " + packet.getAckno() + " " + System.currentTimeMillis() + " " + condition);
-    }
-
     public class UDPDataReceiverException extends RuntimeException {
 
         UDPDataReceiverException(String s) {
@@ -305,9 +292,5 @@ public class UDPDataReceiver implements DataReceiver {
         }
     }
 
-    public enum DatagramCondition {
-        SENT,
-        DROP,
-        ERROR;
-    }
+
 }
