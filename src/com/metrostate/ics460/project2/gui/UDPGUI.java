@@ -52,7 +52,7 @@ public class UDPGUI extends Application {
 
 	@Override
 	public void start(Stage stage) throws Exception {
-		stage.setTitle("Data-Link LayerUer Interface");
+		stage.setTitle("USER INTERFACE WINDOW");
 
 		// Creating a AnchorPane object
 		borderPane = new BorderPane();
@@ -113,7 +113,7 @@ public class UDPGUI extends Application {
 				+ "-fx-background-insets: 50.0 50.0 50.0 50.0; ");
 
 		// Creating a Text object
-		header = new Text("Data-Link Protocol File Transfer");
+		header = new Text("UDP File Transfer Protocol");
 		header.setStyle("-fx-font-size: 25px; "
 				+ "-fx-fill: #818181; " 
 				+ "-fx-font-weight: bold; "
@@ -187,16 +187,6 @@ public class UDPGUI extends Application {
 			if (validation.isValidate(client_ip_input, client_port_input, server_ip_input, server_port_input,
 					timeout_input, packet_size_input, window_size_input)) {
 
-				window_size_input.setStyle("-fx-border-color: red;");
-				packet_size_input.setStyle("-fx-border-color: red;");
-				timeout_input.setStyle("-fx-border-color: red;");
-				server_port_input.setStyle("-fx-border-color: red;");
-				server_ip_input.setStyle("-fx-border-color: red;");
-				client_port_input.setStyle("-fx-border-color: red;");
-				client_ip_input.setStyle("-fx-border-color: red;");
-
-			} else {
-
 				Loader loader = new FileLoader();
 				DataSender dataSender = new UDPDataSender();
 				byte[] bytes = loader.loadData();
@@ -220,11 +210,11 @@ public class UDPGUI extends Application {
 				connt_server.setStyle("-fx-background-color: green; "
 						+ " -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.4) , 5, 0.0 , 0 , 1 ); "
 						+ " -fx-text-alignment: center; " 
-						+ "-fx-font-size: 12px; " 
+						+ "-fx-font-size: 16px; " 
 						+ "-fx-font-weight: bold; "
 						+ "-fx-fill: #806341; " 
-						+ "-fx-pref-width: 200px; " 
-						+ "-fx-pref-height: 25px;");
+						+ "-fx-pref-width: 240px; " 
+						+ "-fx-pref-height: 30px;");
 				connt_server.setDisable(true);
 
 			}

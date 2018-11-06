@@ -9,43 +9,42 @@ public class ValidateInput {
 			TextField packet_size_input,  TextField window_size_input) {
 		
 		if(client_ip_input.getText().isEmpty()) {
-			return true;
+			client_ip_input.setStyle("-fx-border-color: red;");
+			return false;
 		}
 		
 		if(client_port_input.getText().isEmpty()) {
-			return true;
+			client_port_input.setStyle("-fx-border-color: red;");
+			return false;
 		}
 		
 		if(server_ip_input.getText().isEmpty()) {
-			return true;
+			server_ip_input.setStyle("-fx-border-color: red;");
+			return false;
 		}
 		
 		if(server_port_input.getText().isEmpty()) {
-			return true;
+			server_port_input.setStyle("-fx-border-color: red;");
+			return false;
 		}
 		
 		if(timeout_input.getText().isEmpty()) {
-			return true;
+			timeout_input.setStyle("-fx-border-color: red;");
+			return false;
 		}
 		
 		if(packet_size_input.getText().isEmpty()) {
-			return true;
+			packet_size_input.setStyle("-fx-border-color: red;");
+			return false;
 		}
 		
 		if(window_size_input.getText().isEmpty()) {
-			return true;
+			window_size_input.setStyle("-fx-border-color: red;");
+			return false;
 			
 		} else {
 			
-			window_size_input.setStyle("-fx-border-color: red;");
-			packet_size_input.setStyle("-fx-border-color: red;");
-			timeout_input.setStyle("-fx-border-color: red;");
-			server_port_input.setStyle("-fx-border-color: red;");
-			server_ip_input.setStyle("-fx-border-color: red;");
-			client_port_input.setStyle("-fx-border-color: red;");
-			client_ip_input.setStyle("-fx-border-color: red;");
-			
-			return false;
+			return true;
 			
 		}
 	}
