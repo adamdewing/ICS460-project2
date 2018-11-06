@@ -1,6 +1,7 @@
 package com.metrostate.ics460.project2.packet;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class Packet implements Serializable {
 
@@ -62,4 +63,14 @@ public class Packet implements Serializable {
 		this.data = data;
 	}
 
+	@Override
+	public String toString() {
+		return "Packet{" +
+				"cksum=" + cksum +
+				", len=" + len +
+				", ackno=" + ackno +
+				", seqno=" + seqno +
+				", data=" + data +
+				'}';
+	}
 }

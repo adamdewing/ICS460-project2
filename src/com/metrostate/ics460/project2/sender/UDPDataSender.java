@@ -1,5 +1,8 @@
 package com.metrostate.ics460.project2.sender;
 
+import com.metrostate.ics460.project2.NetworkLogger;
+import com.metrostate.ics460.project2.packet.Packet;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,17 +11,16 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.metrostate.ics460.project2.packet.Packet;
-
 public class UDPDataSender implements DataSender {
 
+	private static final NetworkLogger log = new NetworkLogger();
+
+	private static final int port = 13;
 	// Probability of loss during packet sending
 	private static final double ERROR_PROBABILITY = 0.1;
 	// Datagram for received packet
@@ -33,95 +35,72 @@ public class UDPDataSender implements DataSender {
 
 
 	@Override
-	public void sendData(byte[] bytes, int packet_size, int timeout, String ipAddress, int port, int windowSize) {
-		// Get an input file data
-		FileLoader file_loader = new FileLoader();
+	public void sendData(byte[] bytes, int packet_size, int timeout, String receiverIpAddress, int receiverPort, int windowSize) {
 
-		// Add byte[] into a list by split byte to smaller chunks byte 
-		List<byte[]> byteList = byteArrayToChunks(file_loader.loadData(), packet_size);
+		// Add byte[] into a list by split byte to smaller chunks byte
+		List<byte[]> byteList = byteArrayToChunks(bytes, packet_size);
 
-		// For Debugging purpose
-		System.out.println("Debugging a byte[] in the list");
-		byteList.forEach(items->System.out.print(byteList.toString() + " "));
 
 		// Create a datagram socket
 		try (DatagramSocket socket = new DatagramSocket(port)) {
 			socket.setSoTimeout(timeout);
-//			
-//			// Receiver address
-//			InetAddress host_ip = InetAddress.getByName(ipAddress);
-//
-//			// Set to slide window size
-//			packetWaitingForAck = windowSize;
-//			
-//			// Convert byteList to a List of Packet Object and add into a list
-//			List<Packet> sent_packet_list = byteListToPacketList(byteList);
-//			
-//			// Total number of packets
-//			int totalPackets = sent_packet_list.size();
-//
-//			// Create an array of packet for slide window buffer
-//			Packet[] windowBuffer = new Packet[windowSize];
-//
-//			// Loop controller
-//			boolean loop = true;
-//			while(loop) {
-//				
-//				while(lastSequNum - packetWaitingForAck  <= windowBuffer.length && lastSequNum <= totalPackets) {
-//					// A byte array to store serialized packet to send
-//					byte[] packet_out = SerializeObject.serializePacketObject(sent_packet_list);
-//					
-//					// Create datagram packet to send
-//					sendPacket = new DatagramPacket(packet_out, packet_out.length, host_ip, port);
-//					
-//					// Get packet object to determine index of the packet in window buffer
-//					Packet packetIndex  = new Packet();
-//					windowBuffer[lastSequNum] = packetIndex;
-//					
-//
-//					// Subtract window size from a total packet
-//					totalPackets = totalPackets - windowSize;
-//					lastSequNum++;
-//
-//					System.out.println(" ");
-//					// Send all the packet in windowBuffer
-//					for (int i = 0; i < windowBuffer.length; i++) {
-//
-//						// For the last packet
-//						if (totalPackets > 0 && totalPackets > packet_size) {
-//							byte[] remainingPacket = new byte[totalPackets];
-//							Packet remainPacketIndex = new Packet();
-//							windowBuffer[lastSequNum] = remainPacketIndex;
-//							DatagramPacket sendLastPacket = new DatagramPacket(remainingPacket, remainingPacket.length, host_ip, port);
-//							System.out.println("Sending last packet " + remainingPacket + "  " + remainingPacket.length);
-//							socket.send(sendLastPacket);
-//							totalPackets = 0;
-//						}
-//
-//						byte[] data_in = new byte[packet_size];
-//						// Create a datagram packet object for incoming datagrams packets
-//						DatagramPacket recieve_packet = new DatagramPacket(data_in , data_in.length);
-//						
-//						if(isPacketAcknowledge(recieve_packet, port, packetBufferIndex)) {				
-//							System.out.println("Sending packets #: " +  i  + " " + packet_out + " " + packet_out.length);
-//							socket.send(sendPacket);
-//							windowSize++;
-//						}
-//
-//					}
-//					
-//				}
-//			}
 
-		}
-		
-		catch (IOException e) {
-			// TODO Auto-generated catch block
+			// Receiver address
+			InetAddress receiverInetAddress = InetAddress.getByName(receiverIpAddress);
+
+			// Set to slide window size
+			packetWaitingForAck = windowSize;
+
+			// Convert byteList to a List of Packet Object and add into a list
+			List<Packet> sent_packet_list = byteListToPacketList(byteList);
+			sent_packet_list.forEach(packet -> System.out.println(packet));
+			int nextFrameExpected = 1;
+			boolean[] isSent = new boolean[sent_packet_list.size() + 1];
+			boolean[] hasBeenSentAlready =  new boolean[sent_packet_list.size() + 1];
+			while(true){
+				// Iterate over sliding window to see which packets need to be sent
+				for(int i = nextFrameExpected; i < nextFrameExpected + windowSize; i++){
+					if(i < isSent.length && !isSent[i]){
+						Packet packet = sent_packet_list.get(i - 1);
+						packet.setAckno(nextFrameExpected);
+						byte[] data = UDPDataSender.SerializeObject.serializePacketObject(packet);
+						DatagramPacket datagramPacket = new DatagramPacket(data, data.length, receiverInetAddress, receiverPort);
+						System.out.println("Getting ready to send packet " + packet);
+						socket.send(datagramPacket);
+						log.logSendPacket(hasBeenSentAlready[i], packet, packet_size, NetworkLogger.DatagramCondition.SENT);
+						isSent[i] = true;
+						hasBeenSentAlready[i] = true;
+
+					}else{
+						// We already sent this packet so do nothing
+					}
+				}
+				DatagramPacket receiveDatagramPacket = new DatagramPacket(new byte[1024], 1024);
+				try {
+					socket.receive(receiveDatagramPacket);
+					Packet receivePacket = UDPDataSender.SerializeObject.deserializePacketObject(receiveDatagramPacket.getData());
+					nextFrameExpected = receivePacket.getAckno();
+					System.out.println("Received Ack packet of " + receivePacket);
+					if(nextFrameExpected > sent_packet_list.size()){
+						return;
+					}
+
+				} catch (SocketTimeoutException e) {
+					// Need to resend the first packet we are waiting on
+					isSent[nextFrameExpected] = false;
+				} catch (ClassNotFoundException e) {
+					// Could not deserialize.  Could mean a network error.  Just eat error and keep waiting for another packet.
+					System.out.println("Warning, could not deserialize packet!");
+				}
+			}
+
+
+		}catch (IOException e) {
+			System.err.println();
 			e.printStackTrace();
 		}
 
 	}
-
 
 
 	/**
@@ -131,9 +110,13 @@ public class UDPDataSender implements DataSender {
 
 		List<byte[]> byteList = new ArrayList<byte[]>();
 
+		byte[] chunk_bytes;
 		for (int i = 0; i < bytes.length; i += packet_size) {
-			byte[] chunk_bytes = Arrays.copyOfRange(bytes,  i,  i + packet_size);
-
+			if(i + packet_size > bytes.length){
+				chunk_bytes = Arrays.copyOfRange(bytes,  i,  bytes.length);
+			}else{
+				chunk_bytes = Arrays.copyOfRange(bytes,  i,  i + packet_size);
+			}
 			byteList.add(chunk_bytes);
 		}
 
@@ -151,9 +134,16 @@ public class UDPDataSender implements DataSender {
 			packet.setLen((short) (bytes.length + 12));
 			packet.setSeqno(i + 1);
 			packet.setData(bytes);
-
 			packet_list.add(packet);
 		}
+
+		// Add final packet with no data to let receiver know we are done.
+		Packet packet = new Packet();
+		packet.setCksum((short)0);
+		packet.setLen((short)12);
+		packet.setSeqno(packet_list.size() + 1);
+		packet.setData(new byte[0]);
+		packet_list.add(packet);
 
 		return packet_list;
 
@@ -183,7 +173,7 @@ public class UDPDataSender implements DataSender {
 	private static class SerializeObject {
 
 		// Convert an object to byte array
-		private static byte[] serializePacketObject(List<Packet> sent_packet_list) {
+		private static byte[] serializePacketObject(Packet packet) {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = null;
 			try {
@@ -193,7 +183,7 @@ public class UDPDataSender implements DataSender {
 				e1.printStackTrace();
 			}
 			try {
-				oos.writeObject(sent_packet_list);
+				oos.writeObject(packet);
 			} catch (IOException e) {
 
 				e.printStackTrace();
@@ -202,21 +192,35 @@ public class UDPDataSender implements DataSender {
 			try {
 				oos.flush();
 			} catch (IOException e) {
-
 				e.printStackTrace();
 			}
 
 			byte[] bytes = bos.toByteArray();
 
+			try {
+				bos.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
 			return bytes;
 		}
 
 		private static Packet deserializePacketObject(byte[] ackPacket) throws ClassNotFoundException, IOException {
-			ByteArrayInputStream bais = new ByteArrayInputStream(ackPacket);
-			ObjectInputStream ois = new ObjectInputStream(bais);
+			Packet packet;
+			ByteArrayInputStream bais;
+			ObjectInputStream ois = null;
+			try {
+				bais = new ByteArrayInputStream(ackPacket);
+				ois = new ObjectInputStream(bais);
 
-			return (Packet) ois.readObject();
-
+				packet = (Packet) ois.readObject();
+			} finally {
+				if(ois != null){
+					ois.close();
+				}
+			}
+			return packet;
 		}
 	}
 

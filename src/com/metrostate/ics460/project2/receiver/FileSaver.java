@@ -21,7 +21,7 @@ public class FileSaver implements Saver {
 	* A method save a file onto a disk it takes a list of byte array as an argument
 	*/
 	public void saveData(byte[] bytes) {
-		File file = new File("output.dat");
+		File file = new File("output.jpg");
 		FileOutputStream fis = null;
 		try {
 			fis = new FileOutputStream(file);

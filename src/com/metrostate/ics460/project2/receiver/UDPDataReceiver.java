@@ -1,5 +1,7 @@
 package com.metrostate.ics460.project2.receiver;
 
+import com.metrostate.ics460.project2.packet.Packet;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,49 +11,51 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.metrostate.ics460.project2.packet.Packet;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UDPDataReceiver implements DataReceiver {
 
     private final static int MAX_BUFFER_SIZE = 1024;
     private final static int ERROR_FACTOR = 3;
 
-    private List<byte[]> byteList = new ArrayList<>();
+    private Map<Integer, byte[]> byteMap = new HashMap<>();
     private int errorRate = 0;
-
-
+    private int lastPacketSequenceNumber = 0;
 
     @Override
-    public byte[] receiveData(String ipAddress, int port, int windowSize, int errorRate) {
-		System.out.println("+ =========================================================== +");
-		System.out.println("\t\tServer Started To Recieved Data");
-		System.out.println("+ =========================================================== +");
+    public byte[] receiveData(String receiverIpAddress, int receiverPort, int windowSize, int errorRate) {
+        System.out.println("+ =========================================================== +");
+        System.out.println("\t\tServer Started To Recieved Data");
+        System.out.println("+ =========================================================== +");
         this.errorRate = errorRate;
-        int nextSeqnoNeeded = 1;
         DatagramSocket socket = null;
         try {
-            socket = new DatagramSocket(port);
+            socket = new DatagramSocket(receiverPort);
             while (true) {
                 DatagramPacket datagramPacket = new DatagramPacket(new byte[MAX_BUFFER_SIZE], MAX_BUFFER_SIZE);
                 socket.receive(datagramPacket);
                 Packet packet = deserializePacket(datagramPacket);
-                if (isValidPacket(packet) && isPacketInWindow(packet, nextSeqnoNeeded, windowSize)) {
-                    nextSeqnoNeeded = getNextSeqnoNeeded(nextSeqnoNeeded);
-                    if(!isPacketAlreadyReceived(packet)){
-                        sendAckPacket(socket, nextSeqnoNeeded);
+                System.out.println("Received packet " + packet);
+                if (isValidPacket(packet)) {
+                    if (!isPacketAlreadyReceived(packet)) {
+                        logReceivePacket(false, packet, 500);
                         addPacketToList(packet);
-                    }else{
+                    } else {
+                        logReceivePacket(true, packet, 500);
                         // We already received this packet so just throw it away
                     }
                     if (isLastPacket(packet)) {
-                        break;
+                        lastPacketSequenceNumber = packet.getSeqno();
                     }
+                    sendAckPacket(socket, datagramPacket);
 
                 } else {
                     // Receiver only sends positive Acks, so don't send Acks for corrupted Packets
+                }
+                if(isAllPacketsReceived()){
+                    // We are all done!
+                    break;
                 }
             }
         } catch (SocketException e) {
@@ -71,25 +75,27 @@ public class UDPDataReceiver implements DataReceiver {
     }
 
     private boolean isPacketAlreadyReceived(Packet packet) {
-        if (byteList.get(packet.getSeqno() - 1) != null) {
-            return true;
+        if (byteMap.get(packet.getSeqno()) == null) {
+            return false;
         }
-        return false;
+        ;
+        return true;
     }
 
     /**
      * Sends an Ack DatagramPacket letting the sender know what Packet we need next.
      *
      * @param socket
-     * @param nextSeqnoNeeded
      */
-    private void sendAckPacket(DatagramSocket socket, int nextSeqnoNeeded) {
+    private void sendAckPacket(DatagramSocket socket, DatagramPacket receivePacket) {
         Packet ackPacket = new Packet();
         ackPacket.setCksum((short) 0);
         ackPacket.setLen((short) 8);
-        ackPacket.setAckno(nextSeqnoNeeded);
+        ackPacket.setAckno(getNextSeqnoNeeded());
         byte[] bytes = serializePacket(ackPacket);
-        DatagramPacket datagramPacket = new DatagramPacket(bytes, bytes.length);
+        DatagramPacket datagramPacket = null;
+        datagramPacket = new DatagramPacket(bytes, bytes.length, receivePacket.getAddress(), receivePacket.getPort());
+        logAckPacket(ackPacket, DatagramCondition.SENT);
         try {
             socket.send(datagramPacket);
         } catch (IOException e) {
@@ -105,16 +111,27 @@ public class UDPDataReceiver implements DataReceiver {
      * @return
      */
     private Packet deserializePacket(DatagramPacket datagramPacket) {
+        ObjectInputStream ois = null;
+        Packet packet;
         try {
-            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(datagramPacket.getData()));
-            return (Packet) ois.readObject();
+            ois = new ObjectInputStream(new ByteArrayInputStream(datagramPacket.getData()));
+            packet = (Packet) ois.readObject();
         } catch (IOException e) {
             e.printStackTrace();
             throw new UDPDataReceiverException("Could not create an ObjectInputStream while trying to deserialize the payload from a DatagramPacket!");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             throw new UDPDataReceiverException("Could not deserialize the payload for a DatagramPacket!");
+        } finally {
+            if (ois != null) {
+                try {
+                    ois.close();
+                } catch (IOException e) {
+                    // Do nothing
+                }
+            }
         }
+        return packet;
     }
 
     /**
@@ -143,9 +160,9 @@ public class UDPDataReceiver implements DataReceiver {
         return outputStream.toByteArray();
     }
 
-    private boolean introduceError(){
+    private boolean introduceError() {
 
-        if(Math.random() < errorRate/100){
+        if (Math.random() < errorRate / 100) {
             return true;
         }
         return false;
@@ -157,26 +174,28 @@ public class UDPDataReceiver implements DataReceiver {
      * @param packet
      */
     private void addPacketToList(Packet packet) {
+        if (packet.getData() == null && packet.getLen() != 0) {
+            System.err.println("Got a null data!!");
+        }
+
         if (packet.getLen() - 12 != packet.getData().length) {
             System.out.println("WARNING:  Size of the Packet does not match the sent Packet length.");
         }
         int dataSize = packet.getData().length;
         byte[] bytes = new byte[dataSize];
         System.arraycopy(packet.getData(), 0, bytes, 0, dataSize);
-        byteList.add(packet.getSeqno() - 1, bytes);
+        byteMap.put(packet.getSeqno(), bytes);
     }
 
     /**
      * Finds the next sequence number that we are waiting on.
      *
-     * @param nextSeqnoNeeded
      * @return
      */
-    private int getNextSeqnoNeeded(int nextSeqnoNeeded) {
-        for (int i = nextSeqnoNeeded; i <= byteList.size(); i++) {
-            if (byteList.get(i - 1) == null) {
-                return i;
-            }
+    private int getNextSeqnoNeeded() {
+        int nextSeqnoNeeded = 1;
+        while (byteMap.get(nextSeqnoNeeded) != null) {
+            nextSeqnoNeeded++;
         }
         return nextSeqnoNeeded;
     }
@@ -213,6 +232,22 @@ public class UDPDataReceiver implements DataReceiver {
         return packet.getData() == null || packet.getData().length == 0 ? true : false;
     }
 
+
+    private boolean isAllPacketsReceived(){
+        if(lastPacketSequenceNumber == 0){
+            // we haven't got the last packet yet
+            return false;
+        }
+        // we have gotten the last packet, but are we missing any packet's
+        for (int i = 1; i <= byteMap.size(); i++) {
+            // Check to see if we are missing a packet
+            if(byteMap.get(i) == null){
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * This method takes the List of byte arrays and combines them into a single byte array.
      *
@@ -221,17 +256,46 @@ public class UDPDataReceiver implements DataReceiver {
     private byte[] mergeByteList() {
         // Find the total length of all the data combined
         int totalLength = 0;
-        for (int i = 0; i < byteList.size(); i++) {
-            totalLength += byteList.get(i).length;
+        for (int i = 1; i <= byteMap.size(); i++) {
+            totalLength += byteMap.get(i).length;
         }
 
         byte[] bytes = new byte[totalLength];
         int currentPosition = 0;
-        for (int i = 0; i < byteList.size(); i++) {
-            System.arraycopy(byteList.get(i), 0, bytes, currentPosition, byteList.get(i).length);
-            currentPosition += byteList.get(i).length;
+        for (int i = 1; i <= byteMap.size(); i++) {
+            System.arraycopy(byteMap.get(i), 0, bytes, currentPosition, byteMap.get(i).length);
+            currentPosition += byteMap.get(i).length;
         }
         return bytes;
+    }
+
+    private boolean isPacketReceivedOutOfSequence(Packet packet) {
+        if (packet.getSeqno() == 1) {
+            return false;
+        }
+        for (int i = 1; i < packet.getSeqno(); i++) {
+            if (byteMap.get(i) == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void logReceivePacket(boolean isPacketAlreadyReceived, Packet packet, int packetSize) {
+        String status = isPacketAlreadyReceived ? "DUPL " : "RECV ";
+        String packetStatus = "";
+        if (packet.getCksum() == 1) {
+            packetStatus = "CRPT";
+        } else if (isPacketReceivedOutOfSequence(packet)) {
+            packetStatus = "!Seq";
+        } else {
+            packetStatus = "RECV";
+        }
+        System.out.println(status + " " + System.currentTimeMillis() + " " + packet.getSeqno() + " " + packetStatus);
+    }
+
+    private void logAckPacket(Packet packet, DatagramCondition condition) {
+        System.out.println("SENDing ACK " + packet.getAckno() + " " + System.currentTimeMillis() + " " + condition);
     }
 
     public class UDPDataReceiverException extends RuntimeException {
@@ -239,5 +303,11 @@ public class UDPDataReceiver implements DataReceiver {
         UDPDataReceiverException(String s) {
             super(s);
         }
+    }
+
+    public enum DatagramCondition {
+        SENT,
+        DROP,
+        ERROR;
     }
 }
