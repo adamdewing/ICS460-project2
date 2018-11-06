@@ -1,13 +1,9 @@
 package com.metrostate.ics460.project2.gui;
 
-import java.io.FileInputStream;
-
 import com.metrostate.ics460.project2.sender.DataSender;
 import com.metrostate.ics460.project2.sender.FileLoader;
 import com.metrostate.ics460.project2.sender.Loader;
-import com.metrostate.ics460.project2.sender.Sender;
 import com.metrostate.ics460.project2.sender.UDPDataSender;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -28,6 +24,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+
+import java.io.FileInputStream;
 
 public class UDPGUI extends Application {
 
@@ -190,7 +188,7 @@ public class UDPGUI extends Application {
 				Loader loader = new FileLoader();
 				DataSender dataSender = new UDPDataSender();
 				byte[] bytes = loader.loadData();
-				dataSender.sendData(bytes, Integer.valueOf(packet_size_input.getText()), Integer.valueOf(timeout_input.getText()), client_ip_input.getText(), Integer.valueOf(client_port_input.getText()), Integer.valueOf(window_size_input.getText()));
+				dataSender.sendData(bytes, Integer.valueOf(packet_size_input.getText()), Integer.valueOf(timeout_input.getText()), client_ip_input.getText(), Integer.valueOf(client_port_input.getText()), Integer.valueOf(window_size_input.getText()), .5);
 				
 				timeout_input.getText();
 				client_ip_input.setDisable(true);
