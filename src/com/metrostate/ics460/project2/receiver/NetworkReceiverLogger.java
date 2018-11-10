@@ -1,6 +1,6 @@
 package com.metrostate.ics460.project2.receiver;
 
-import com.metrostate.ics460.project2.packet.Packet;
+import client_server.Packet;
 
 public class NetworkReceiverLogger {
     public void logReceivePacket(boolean isPacketAlreadyReceived, Packet packet, boolean isPacketOutOfSequence) {

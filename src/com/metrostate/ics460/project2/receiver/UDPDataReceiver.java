@@ -1,6 +1,6 @@
 package com.metrostate.ics460.project2.receiver;
 
-import com.metrostate.ics460.project2.packet.Packet;
+import client_server.Packet;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

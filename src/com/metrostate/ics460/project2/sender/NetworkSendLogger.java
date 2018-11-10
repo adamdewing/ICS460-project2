@@ -1,8 +1,6 @@
 package com.metrostate.ics460.project2.sender;
 
-import com.metrostate.ics460.project2.packet.Packet;
-
-import java.util.logging.Logger;
+import client_server.Packet;
 
 public class NetworkSendLogger {
 
@@ -15,6 +13,7 @@ public class NetworkSendLogger {
 
     public void logReceiveAck(Packet packet, AckStatus ackStatus){
         System.out.println("AckRcvd " + " " + packet.getAckno() + " " + ackStatus);
+
     }
 
     public enum DatagramCondition{

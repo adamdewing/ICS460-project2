@@ -1,6 +1,6 @@
 package com.metrostate.ics460.project2.sender;
 
-import com.metrostate.ics460.project2.packet.Packet;
+import client_server.Packet;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -58,6 +58,7 @@ public class UDPDataSender implements DataSender {
                         if (corruptDelayDropPacket(packet) != null) {
                             byte[] data = UDPDataSender.SerializeObject.serializePacketObject(corruptDelayDropPacket(packet));
                             DatagramPacket datagramPacket = new DatagramPacket(data, data.length, receiverInetAddress, receiverPort);
+                            System.out.println("Sending packet to:" + datagramPacket.getAddress() + ":" + datagramPacket.getPort());
                             socket.send(datagramPacket);
                             if (packet.getCksum() == 1) {
                                 condition = NetworkSendLogger.DatagramCondition.ERROR;
@@ -66,6 +67,7 @@ public class UDPDataSender implements DataSender {
                         } else {
                             condition = NetworkSendLogger.DatagramCondition.DROP;
                         }
+
                         log.logSendPacket(hasBeenSentAlready[i], packet, packet_size, condition);
                         isSent[i] = true;
                         hasBeenSentAlready[i] = true;
@@ -74,14 +76,22 @@ public class UDPDataSender implements DataSender {
                         // We already sent this packet so do nothing
                     }
                 }
-                DatagramPacket receiveDatagramPacket = new DatagramPacket(new byte[1024], 1024);
                 try {
+                    DatagramPacket receiveDatagramPacket = new DatagramPacket(new byte[1024], 1024);
                     socket.receive(receiveDatagramPacket);
+                    // Check to make sure that we have the correct address info to work with other groups
+                    if(!receiveDatagramPacket.getAddress().equals(receiverInetAddress) || receiveDatagramPacket.getPort() != port){
+                        receiverInetAddress = receiveDatagramPacket.getAddress();
+                        receiverPort = receiveDatagramPacket.getPort();
+                    }
                     Packet receivePacket = UDPDataSender.SerializeObject.deserializePacketObject(receiveDatagramPacket.getData());
-                    log.logReceiveAck(receivePacket, getAckStatus(receivePacket));
-                    nextFrameExpected = receivePacket.getAckno();
-                    if (nextFrameExpected > sent_packet_list.size()) {
-                        return;
+                    if (receivePacket != null) {
+                        log.logReceiveAck(receivePacket, getAckStatus(receivePacket));
+                        System.out.println(receivePacket);
+                        nextFrameExpected = receivePacket.getAckno();
+                        if (nextFrameExpected > sent_packet_list.size()) {
+                            return;
+                        }
                     }
                 } catch (SocketTimeoutException e) {
                     // Need to resend the first packet we are waiting on
@@ -205,7 +215,7 @@ public class UDPDataSender implements DataSender {
         }
 
         private static Packet deserializePacketObject(byte[] ackPacket) throws ClassNotFoundException, IOException {
-            Packet packet;
+            Packet packet = null;
             ByteArrayInputStream bais;
             ObjectInputStream ois = null;
             try {
@@ -213,6 +223,9 @@ public class UDPDataSender implements DataSender {
                 ois = new ObjectInputStream(bais);
 
                 packet = (Packet) ois.readObject();
+            } catch (Exception ex) {
+                System.err.println("Received the following error deserializing the packet:");
+                ex.printStackTrace();
             } finally {
                 if (ois != null) {
                     ois.close();
