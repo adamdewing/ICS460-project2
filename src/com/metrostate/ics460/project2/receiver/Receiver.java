@@ -22,7 +22,7 @@ public class Receiver {
 		int windowSize = scanner.nextInt();
 		System.out.println("");
         DataReceiver dataReceiver = new UDPDataReceiver();
-        byte[] bytes = dataReceiver.receiveData(ipAddress, port, windowSize, 0);
+        byte[] bytes = dataReceiver.receiveData(ipAddress, port, windowSize, 20);
 
         Saver saver = new FileSaver();
         saver.saveData(bytes);
